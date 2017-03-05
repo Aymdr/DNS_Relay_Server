@@ -7,6 +7,8 @@
 
 #include <string>
 #include <boost/asio.hpp>
+#include <boost/array.hpp>
+#include <bitset>
 
 #define  RECE_BUFFER_SIZE 1024
 using boost::asio::ip::udp;
@@ -23,7 +25,7 @@ public:
     };
     void start();
     void stop();
-    void resovlerDNSData(boost::array<char,RECE_BUFFER_SIZE> &receiveBuf,DNS_Data& dnsData);
+    void resovleDNSData(boost::array<char,RECE_BUFFER_SIZE> &receiveBuf,DNS_Data& dnsData);
     void responseClient();
     void requestOther();
     std::string requestSelf();
@@ -38,6 +40,37 @@ private:
 
 class DNS_Data
 {
+public:
+    DNS_Data();
+    DNS_Data(boost::array<char,RECE_BUFFER_SIZE> &dataBuf);
+    void resolveData(boost::array<char,RECE_BUFFER_SIZE> &dataBuf);
+
+    std::string getQName();
+
+
+    void set16Bits(char one,char two,std::bitset<16>& bitsetDes);
+    void debugPrintDNSData();
+private:
+    void resolveQuestionSec(boost::array<char,RECE_BUFFER_SIZE> &dataBuf,int currentFlag);
+
+
+
+
+    std::bitset<16> ID;
+    std::bitset<1> QR;
+    std::bitset<4> OPCODE;
+    std::bitset<1> AA;
+    std::bitset<1> TC;
+    std::bitset<1> RD;
+    std::bitset<1> RA;
+    std::bitset<3> Z;
+    std::bitset<4> RCODE;
+    std::bitset<16> QDCOUNT;
+    std::bitset<16> ANCOUNT;
+    std::bitset<16> NSCOUNT;
+    std::bitset<16> ARCOUNT;
+
+    std::string qName;
 
 };
 
