@@ -19,6 +19,8 @@ class DNS_Data;
 class DNS_Relay_Server {
 public:
     enum RR_TYPE{CNAME,A,AAAA,PTR,HINFO,MX,NS}; // ...etc.
+    const std::string REMOTE_DNS_SERVER="10.3.9.6";
+
     DNS_Relay_Server(int port)
     :serverPort(port)
     {
@@ -32,7 +34,7 @@ public:
     void requestOther();
 
 
-    std::string rrConstructor(std::string name,RR_TYPE type,int class_in,int ttl,int rlength, std::string address);
+    std::string rrConstructor(std::string name,int type,int class_in,int ttl,int rlength, std::string address);
     // get Resource Records
     std::string getRRData();
     std::string requestSelf();
@@ -79,6 +81,10 @@ private:
     std::bitset<1> RD;
     std::bitset<1> RA;
     std::bitset<3> Z;
+public:
+    const std::bitset<16> &getQTYPE() const;
+
+private:
     std::bitset<4> RCODE;
     std::bitset<16> QDCOUNT;
     std::bitset<16> ANCOUNT;
@@ -87,9 +93,16 @@ private:
 
     std::bitset<16> QTYPE;
 public:
+    void setQTYPE(const std::bitset<16> &QTYPE);
+
+    void setQCLASS(const std::bitset<16> &QCLASS);
+
+public:
     void setRD(const std::bitset<1> &RD);
 
     void setRA(const std::bitset<1> &RA);
+
+    void setRCODE(const std::bitset<4> &RCODE);
 
 private:
     std::bitset<16> QCLASS;

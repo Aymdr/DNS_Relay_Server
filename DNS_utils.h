@@ -17,4 +17,6 @@ std::string getStrFrom16Bits(std::bitset<16>& bitsetSour);
 
 std::string getStrFrom32Bits(std::bitset<32>& bitsetSour);
 
+void printStrByHex(const std::string str);
+
 #endif //DNS_RELAY_SERVER_DNS_UTILS_H

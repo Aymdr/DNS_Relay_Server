@@ -6,6 +6,7 @@
 #include "DNS_Relay_Server.h"
 #include "DNS_utils.h"
 
+
 void DNS_Relay_Server::start()
 {
     try
@@ -72,25 +73,81 @@ std::string DNS_Relay_Server::requestSelf()
 void DNS_Relay_Server::handleDNSRequest(udp::socket& sendSocket,DNS_Data &request, udp::endpoint &remoteEndPoint) {
     std::string queryName=request.getQName();
     // TODO query
+    bool querySuccess=false;
+
     std::string responseStr;
+    if(!querySuccess)
+    {
+        responseStr+=request.getHeaderData();
+        boost::system::error_code error = boost::asio::error::host_not_found;
+        boost::asio::ip::address add;
+        add.from_string(REMOTE_DNS_SERVER);
+        boost::asio::ip::udp::endpoint endpoint(add, short(53));
+
+        boost::asio::io_service tcpService;
+        //boost::asio::ip::udp::socket serverSocket(tcpService);
+
+      //  serverSocket.connect(endpoint, error);
+      //  serverSocket.send(boost::asio::buffer(responseStr));
+        sendSocket.send_to(boost::asio::buffer(responseStr),endpoint);
+        boost::array<char,RECE_BUFFER_SIZE> recvBuf;
+       // int readSize=serverSocket.receive(boost::asio::buffer(recvBuf));
+
+        DNS_Data receiveData;
+        resovleDNSData(recvBuf,receiveData);
+
+        receiveData.debugPrintDNSData();
+        sendSocket.send_to(boost::asio::buffer(receiveData.getHeaderData()),remoteEndPoint);
+        //   socket.send_to(recvBuf,remoteEndpoint);
+
+        return ;
+    }
+
+
     request.setQR(1);
     request.setRA(1);
     request.setRD(1);
     request.setANCOUNT(1);
-    responseStr+=request.getHeaderData();
-    responseStr+=rrConstructor("www.baidu.com",A,1,1,4,"0.0.0.1");
+    request.setQCLASS(1);
 
-    std::cout<<">>"<<responseStr<<"  <<";
+    std::string resultStr;
+    int resultStrSize;
+    if(request.getQTYPE().to_ulong()==1)
+    {
+        request.setQTYPE(1);
+        resultStr="18.18.18.18";
+        resultStrSize=4;
+
+        responseStr+=request.getHeaderData();
+        responseStr+=rrConstructor(queryName,request.getQTYPE().to_ulong(),1,69,resultStrSize,resultStr);
+
+        std::cout<<">>"<<responseStr<<"  <<";
+
+    } else if(request.getQTYPE().to_ulong()==28)
+    {
+        request.setQTYPE(28);
+        resultStr="www.thief.com";
+        resultStrSize=resultStr.size()+2;
+
+        request.setRCODE(1);
+        request.setANCOUNT(0);
+        responseStr+=request.getHeaderData();
+    //    responseStr+=rrConstructor(queryName,request.getQTYPE().to_ulong(),1,69,resultStrSize,resultStr);
+
+        std::cout<<">>"<<responseStr<<"  <<";
+    }
+
+
    // udp::socket responSocket(ioService);
     sendSocket.send_to(boost::asio::buffer(responseStr),remoteEndPoint);
 }
 
 std::string
-DNS_Relay_Server::rrConstructor(std::string name, RR_TYPE type, int class_in, int ttl,int rlength, std::string address) {
+DNS_Relay_Server::rrConstructor(std::string name, int type, int class_in, int ttl,int rlength, std::string address) {
     std::stringstream bitHelper;
 
     bitHelper<<domainNameToBitStr(name);
-    std::bitset<16> rType(1);
+    std::bitset<16> rType(type);
     std::bitset<16> rClass(class_in);
     std::bitset<32> rTtl(ttl);
     std::bitset<16> rLen(rlength);
@@ -151,6 +208,8 @@ void DNS_Data::debugPrintDNSData() {
     std::cout<<"NSCOUNT: "<<NSCOUNT<<"\n";
     std::cout<<"ARCOUNT: "<<ARCOUNT<<"\n";
     std::cout<<"QNAME: "<<qName<<"\n";
+    std::cout<<"QTYPE: "<<QTYPE<<"\n";
+    std::cout<<"QCLASS: "<<QCLASS<<"\n";
     std::cout<<"***********************************************\n";
 }
 
@@ -186,9 +245,8 @@ int DNS_Data::resolveQuestionSec(boost::array<char, RECE_BUFFER_SIZE> &dataBuf,
                 qName+='.';
         }
     }
-    questionSection+=(char)NULL;
-    questionSection+=getStrFrom16Bits(QTYPE);
-    questionSection+=getStrFrom16Bits(QCLASS);
+   // questionSection+=(char)NULL;
+
 
     return currentFlag;
 }
@@ -202,7 +260,10 @@ std::string DNS_Data::getHeaderData() {
 
     bitHelper<<idStr<<getFlag()<<getStrFrom16Bits(QDCOUNT)<<getStrFrom16Bits(ANCOUNT)
              <<getStrFrom16Bits(NSCOUNT)<<getStrFrom16Bits(ARCOUNT);
-    bitHelper<<questionSection;
+    bitHelper<<questionSection<<getStrFrom16Bits(QTYPE)<<getStrFrom16Bits(QCLASS);
+
+    printStrByHex(bitHelper.str());
+    std::cout<<"\n>>questionSection :"<<questionSection<<" \n";
     std::cout<<"\n>>bitHelper :"<<bitHelper.str()<<" \n";
     return bitHelper.str();
 }
@@ -225,9 +286,27 @@ std::string DNS_Data::getFlag() {
 
     bitHelper<<QR<<OPCODE<<AA<<TC<<RD<<RA<<Z<<RCODE;
     bitHelper>>flagBits;
+    printStrByHex(bitHelper.str());
+    std::cout<<"flag bits : "<<flagBits<<" \n";
     return getStrFrom16Bits(flagBits);
 }
 
 void DNS_Data::setANCOUNT(const std::bitset<16> &ANCOUNT) {
     DNS_Data::ANCOUNT = ANCOUNT;
+}
+
+void DNS_Data::setQTYPE(const std::bitset<16> &QTYPE) {
+    DNS_Data::QTYPE = QTYPE;
+}
+
+void DNS_Data::setQCLASS(const std::bitset<16> &QCLASS) {
+    DNS_Data::QCLASS = QCLASS;
+}
+
+const std::bitset<16> &DNS_Data::getQTYPE() const {
+    return QTYPE;
+}
+
+void DNS_Data::setRCODE(const std::bitset<4> &RCODE) {
+    DNS_Data::RCODE = RCODE;
 }

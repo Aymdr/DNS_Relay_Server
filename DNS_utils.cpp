@@ -17,7 +17,7 @@ std::string addressToBitStr(std::string address)
     if (address[0]>='0'&&address[0]<='9')
         return ipToBitStr(address);
     else
-        return ipToBitStr(address);
+        return domainNameToBitStr(address);
 };
 
 std::string domainNameToBitStr(std::string domainName)
@@ -34,6 +34,7 @@ std::string domainNameToBitStr(std::string domainName)
             piece.clear();
         }
     }
+    domainPeices.push_back(piece);
 
     std::string bitStr;
     for(auto piece:domainPeices)
@@ -42,8 +43,10 @@ std::string domainNameToBitStr(std::string domainName)
         bitStr+=(char)(leng.to_ulong());
         bitStr+=piece;
     }
-    std::bitset<8> l(0);
-    bitStr+=(char)(l.to_ulong());
+  //  std::bitset<8> l(0);
+  //  bitStr+=(char)(l.to_ulong());
+    bitStr+=(char)NULL;
+    std::cout<<">> response name : "<<bitStr<<"  <<";
     return bitStr;
 };
 
@@ -61,6 +64,7 @@ std::string ipToBitStr(std::string ip)
             piece.clear();
         }
     }
+    domainPeices.push_back(piece);
 
     std::string bitStr;
     for(auto piece:domainPeices)
@@ -100,4 +104,14 @@ std::string getStrFrom32Bits(std::bitset<32> &bitsetSour) {
     std::bitset<16> second16(bitStr,16,16);
 
     return getStrFrom16Bits(first16)+getStrFrom16Bits(second16);
+}
+
+void printStrByHex(const std::string str) {
+    for(auto s:str)
+    {
+       // if(s<='9'&&s>='0')
+        std::cout<<" "<<std::hex<<(unsigned int)s;
+    //    else
+    }
+    std::cout<<std::endl;
 }
