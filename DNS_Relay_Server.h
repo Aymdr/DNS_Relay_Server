@@ -18,6 +18,7 @@ class DNS_Data;
 
 class DNS_Relay_Server {
 public:
+    enum RR_TYPE{CNAME,A,AAAA,PTR,HINFO,MX,NS}; // ...etc.
     DNS_Relay_Server(int port)
     :serverPort(port)
     {
@@ -26,8 +27,14 @@ public:
     void start();
     void stop();
     void resovleDNSData(boost::array<char,RECE_BUFFER_SIZE> &receiveBuf,DNS_Data& dnsData);
+    void handleDNSRequest(udp::socket& sendSocket,DNS_Data& request,udp::endpoint& remoteEndPoint);
     void responseClient();
     void requestOther();
+
+
+    std::string rrConstructor(std::string name,RR_TYPE type,int class_in,int ttl,int rlength, std::string address);
+    // get Resource Records
+    std::string getRRData();
     std::string requestSelf();
 
 
@@ -41,23 +48,31 @@ private:
 class DNS_Data
 {
 public:
+
     DNS_Data();
     DNS_Data(boost::array<char,RECE_BUFFER_SIZE> &dataBuf);
     void resolveData(boost::array<char,RECE_BUFFER_SIZE> &dataBuf);
 
+
+    std::string getHeaderData();
+
+
     std::string getQName();
 
-
-    void set16Bits(char one,char two,std::bitset<16>& bitsetDes);
     void debugPrintDNSData();
+
 private:
-    void resolveQuestionSec(boost::array<char,RECE_BUFFER_SIZE> &dataBuf,int currentFlag);
-
-
-
+    int resolveQuestionSec(boost::array<char,RECE_BUFFER_SIZE> &dataBuf,int currentFlag);
+    std::string getFlag();
 
     std::bitset<16> ID;
     std::bitset<1> QR;
+public:
+    void setANCOUNT(const std::bitset<16> &ANCOUNT);
+
+    void setQR(const std::bitset<1> &QR);
+
+private:
     std::bitset<4> OPCODE;
     std::bitset<1> AA;
     std::bitset<1> TC;
@@ -70,7 +85,25 @@ private:
     std::bitset<16> NSCOUNT;
     std::bitset<16> ARCOUNT;
 
+    std::bitset<16> QTYPE;
+public:
+    void setRD(const std::bitset<1> &RD);
+
+    void setRA(const std::bitset<1> &RA);
+
+private:
+    std::bitset<16> QCLASS;
+
     std::string qName;
+    std::string questionSection;
+    std::string idStr;
+    std::string flagStr;
+    std::string rcodeStr;
+    std::string qdCountStr;
+    std::string nsCountStr;
+    std::string arCountStr;
+
+    int dataSize;
 
 };
 
